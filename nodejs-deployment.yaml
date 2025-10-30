@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs
+  template:
+    metadata:
+      labels:
+        app: nodejs
+    spec:
+      initContainers:
+      - name: init-mysql-db
+        image: mysql:5.7
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: rootpass
+        command:
+          [
+            "sh", "-c",
+            "echo 'Creating database and user...' && \
+             mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD -e \"CREATE DATABASE IF NOT EXISTS ivolve; CREATE USER IF NOT EXISTS 'appuser'@'%' IDENTIFIED BY 'apppass'; GRANT ALL PRIVILEGES ON ivolve.* TO 'appuser'@'%'; FLUSH PRIVILEGES;\""
+          ]
+      containers:
+      - name: nodejs
+        image: lenaadel/nodejs-app:v1
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DB_HOST
+          value: mysql
+        - name: DB_USER
+          value: appuser
+        - name: DB_PASSWORD
+          value: apppass
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-service
+spec:
+  selector:
+    app: nodejs
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: NodePort
