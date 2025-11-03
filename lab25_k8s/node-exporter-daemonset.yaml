@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: monitoring
+  labels:
+    app: node-exporter
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      tolerations:
+        - operator: "Exists"   # حتى يتحمل جميع أنواع taints
+      containers:
+        - name: node-exporter
+          image: prom/node-exporter:latest
+          ports:
+            - name: metrics
+              containerPort: 9100
+              hostPort: 9100
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            privileged: true
+      hostNetwork: true
+      hostPID: true
+
